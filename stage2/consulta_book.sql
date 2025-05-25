@@ -1,3 +1,7 @@
+DROP TABLE IF EXISTS tb_book_sellers;
+
+CREATE TABLE tb_book_sellers AS
+
 -- Bloco 1: Cálculo da idade base dos vendedores (em dias) até 01/04/2017
 WITH tb_base_age AS (
     SELECT 
@@ -132,7 +136,3 @@ FROM tb_sellers_semi_complete AS t1
 
 LEFT JOIN tb_sellers AS t2 
     ON t1.seller_id = t2.seller_id
-
-ORDER BY sales_qt DESC
-
-LIMIT 5

@@ -1,13 +1,17 @@
+DROP TABLE IF EXISTS tb_book_sellers;
+
+CREATE TABLE tb_book_sellers AS
+
 -- Bloco 1: Cálculo da idade base dos vendedores (em dias) até 01/04/2017
 WITH tb_base_age AS (
     SELECT 
         t2.seller_id,
-        MAX(julianday('2017-04-01') - julianday(t1.order_approved_at)) AS base_age_days
+        MAX(julianday('{date}') - julianday(t1.order_approved_at)) AS base_age_days
     FROM tb_orders AS t1
     LEFT JOIN tb_order_items AS t2 
         ON t1.order_id = t2.order_id
     WHERE 
-        t1.order_approved_at < '2017-04-01'
+        t1.order_approved_at < '{date}'
         AND t1.order_status = 'delivered'
     GROUP BY t2.seller_id
 ),
@@ -16,38 +20,37 @@ WITH tb_base_age AS (
 tb_sellers_semi_complete AS (
     SELECT 
         t2.seller_id,
-        printf('%.1f', avg(t5.review_score)) AS avg_review_score,
+        AVG(t5.review_score) AS avg_review_score,
 
         -- Métricas de idade de atividade
         CAST(t3.base_age_days AS INT) AS base_age_days,
         (CAST(t3.base_age_days / 30 AS INT) + 1) AS base_age_months,
-        CAST(julianday('2017-04-01') - julianday(MAX(t1.order_approved_at)) AS INT) AS time_since_last_sale_days,
+        CAST(julianday('{date}') - julianday(MAX(t1.order_approved_at)) AS INT) AS time_since_last_sale_days,
         COUNT(DISTINCT strftime('%m', t1.order_approved_at)) AS activated_months_qt,
 
         -- Percentual de meses com venda (ativação)
-        printf('%.2f', 
-            CAST(COUNT(DISTINCT strftime('%m', t1.order_approved_at)) AS FLOAT) / 
-            MIN((CAST(t3.base_age_days / 30 AS INT) + 1), 6) * 100
-        ) AS activated_months_pct,
+        CAST(COUNT(DISTINCT strftime('%m', t1.order_approved_at)) AS FLOAT) / 
+        MIN((CAST(t3.base_age_days / 30 AS INT) + 1), 6) * 100 AS activated_months_pct,
 
         -- Métricas de receita e volume de vendas
-        printf('%.2f', SUM(t2.price)) AS revenue_R$,
+        SUM(t2.price) AS revenue_R$,
         COUNT(DISTINCT t2.order_id) AS sales_qt,
         COUNT(t2.product_id) AS products_qt,
         COUNT(DISTINCT t2.product_id) AS distinct_products_qt,
 
         -- Métricas médias
-        printf('%.2f', SUM(t2.price) / COUNT(DISTINCT t2.order_id)) AS avg_sales_value_per_order_R$,
-        printf('%.2f', SUM(t2.price) / MIN(1 + CAST(t3.base_age_days / 30 AS INT), 6)) AS avg_sales_value_per_month_R$,
-        printf('%.2f', SUM(t2.price) / COUNT(DISTINCT strftime('%m', t1.order_approved_at))) AS avg_sales_value_per_activated_month_R$,
-        printf('%.4f', CAST(COUNT(t2.product_id) AS FLOAT) / COUNT(DISTINCT t2.order_id)) AS avg_num_products_per_sale,
+        SUM(t2.price) / COUNT(DISTINCT t2.order_id) AS avg_sales_value_per_order_R$,
+        SUM(t2.price) / MIN(1 + CAST(t3.base_age_days / 30 AS INT), 6) AS avg_sales_value_per_month_R$,
+        SUM(t2.price) / COUNT(DISTINCT strftime('%m', t1.order_approved_at)) AS avg_sales_value_per_activated_month_R$,
+        CAST(COUNT(t2.product_id) AS FLOAT) / COUNT(DISTINCT t2.order_id) AS avg_num_products_per_sale,
 
         -- Percentual de entregas com atraso
-        printf('%.2f', (SUM(CASE WHEN julianday(order_delivered_customer_date) > julianday(order_estimated_delivery_date) THEN 1 ELSE 0 END) / COUNT(DISTINCT t2.order_id)) * 100) AS delay_pct,
+        (SUM(CASE WHEN julianday(order_delivered_customer_date) > julianday(order_estimated_delivery_date) THEN 1 ELSE 0 END) / 
+        COUNT(DISTINCT t2.order_id)) * 100 AS delay_pct,
 
-        CAST(avg(julianday(t1.order_estimated_delivery_date) - julianday(t1.order_purchase_timestamp)) AS INT) AS avg_delivery_time_days,
+        CAST(AVG(julianday(t1.order_estimated_delivery_date) - julianday(t1.order_purchase_timestamp)) AS INT) AS avg_delivery_time_days,
 
-        -- Vendas por categoria (todas as listadas)
+        -- Vendas por categoria
         SUM(CASE WHEN product_category_name = 'cama_mesa_banho' THEN 1 ELSE 0 END) AS cat_cama_mesa_banho_qt,
         SUM(CASE WHEN product_category_name = 'beleza_saude' THEN 1 ELSE 0 END) AS cat_beleza_saude_qt,
         SUM(CASE WHEN product_category_name = 'esporte_lazer' THEN 1 ELSE 0 END) AS cat_esporte_lazer_qt,
@@ -114,8 +117,8 @@ tb_sellers_semi_complete AS (
         ON t5.order_id = t1.order_id
 
     WHERE 
-        t1.order_approved_at >= '2016-10-01'
-        AND t1.order_approved_at < '2017-04-01'
+        t1.order_approved_at >= date('{date}', '-6 months')
+        AND t1.order_approved_at < '{date}'
         AND t1.order_status = 'delivered'
 
     GROUP BY t2.seller_id
@@ -123,16 +126,12 @@ tb_sellers_semi_complete AS (
 
 -- Bloco 3: Inclusão de localização (estado e cidade) dos vendedores
 SELECT 
+    '{date}' AS dt_ref,
     t2.seller_state,
     t2.seller_city,
     t1.*
-    
 
 FROM tb_sellers_semi_complete AS t1
 
 LEFT JOIN tb_sellers AS t2 
-    ON t1.seller_id = t2.seller_id
-
-ORDER BY sales_qt DESC
-
-LIMIT 5
+    ON t1.seller_id = t2.seller_id;
