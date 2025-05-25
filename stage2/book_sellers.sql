@@ -1,6 +1,3 @@
-DROP TABLE IF EXISTS tb_book_sellers;
-
-CREATE TABLE tb_book_sellers AS
 
 -- Bloco 1: Cálculo da idade base dos vendedores (em dias) até 01/04/2017
 WITH tb_base_age AS (

@@ -1,0 +1,10 @@
+matplotlib
+numpy
+pandas
+openpyxl
+python_dateutil
+scikit_learn
+seaborn
+SQLAlchemy
+yellowbrick
+ipykernel
