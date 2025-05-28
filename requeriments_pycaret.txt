@@ -1,0 +1,15 @@
+pandas==2.1.4
+numpy==1.26.4
+scikit-learn==1.4.2
+pycaret==3.3.2
+matplotlib==3.7.5
+seaborn==0.13.2
+yellowbrick==1.5
+plotly==5.24.1
+plotly-resampler==0.10.0
+kaleido==0.2.1
+imbalanced-learn==0.13.0
+sqlalchemy==2.0.41
+scikit-plot==0.3.7
+pyod==2.0.5
+joblib==1.4.0

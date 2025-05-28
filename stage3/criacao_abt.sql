@@ -1,4 +1,3 @@
-
 drop table if exists tb_abt_churn;
 create table tb_abt_churn as 
 
