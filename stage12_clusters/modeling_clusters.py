@@ -76,7 +76,7 @@ categories = [
 
 df_prop = pd.DataFrame()
 for c in categories:
-   df_prop[f'{c}_pct'] = df[c] / df['products_qt']
+   df_prop[f'{c}_pct'] = (df[c] / df['products_qt'])*100
    
 
 # %% 
@@ -128,3 +128,47 @@ visualizer.show()        # Finalize and render the figure
 # %%
 df['cluster_id'] = model.labels_
 df[['seller_id', 'cluster_id']]
+
+# %% Agrupamento das variáveis de RFV (Recência, Frequencia, Valor)
+rfv_features = [
+   'avg_review_score',
+   'base_age_days',
+   'time_since_last_sale_days',
+   'activated_months_pct',
+   'sales_qt', 
+   'products_qt',
+   'distinct_products_qt',
+   'avg_sales_value_per_order_R$',
+   'avg_num_products_per_sale',
+   ]
+
+df_rfv = df[rfv_features].copy()
+df_rfv
+
+# %%
+from sklearn import preprocessing
+minmax = preprocessing.MinMaxScaler() # definindo o normalizador
+minmax.fit(df_rfv) # fitando o normalizador
+X_rfv = minmax.transform(df_rfv)
+
+# %%
+# Instantiate the clustering model and visualizer
+model_rfv = AgglomerativeClustering()
+visualizer = KElbowVisualizer(model_rfv, k=(5,20))
+visualizer.fit(X_rfv)        # Fit the data to the visualizer
+visualizer.show()        # Finalize and render the figure
+
+# %%
+minmax = preprocessing.MinMaxScaler() # definindo o normalizador
+minmax.fit(df_rfv) # fitando o normalizador
+X_rfv = pd.DataFrame(minmax.transform(df_rfv), columns=rfv_features )
+model_rfv = AgglomerativeClustering(n_clusters=11)
+model_rfv.fit(X_rfv[rfv_features])
+
+X_rfv['cluster_id'] = model_rfv.labels_
+
+# %%
+seaborn.heatmap(X_rfv.groupby('cluster_id').mean())
+plt.show()
+
+# %%
