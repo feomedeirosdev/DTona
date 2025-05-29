@@ -3,6 +3,8 @@ from pathlib import Path
 from sqlalchemy import create_engine
 import pandas as pd
 import numpy as np
+
+# %%
 from pycaret.classification import *  
 
 # %% Carregamento de dados
